@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+</head>
+<body>
+    <h1>Register User</h1>
+    <form id="userForm">
+        <label for="national_id">National ID:</label>
+        <input type="text" id="national_id" name="national_id" required><br><br>
+
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="phone_number">Phone Number:</label>
+        <input type="text" id="phone_number" name="phone_number" required><br><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="date_of_birth">Date of Birth:</label>
+        <input type="date" id="date_of_birth" name="date_of_birth" required><br><br>
+
+        <label for="biometric_data">Biometric Data (Image):</label>
+        <input type="file" id="biometric_data" accept="image/*" required><br><br>
+
+        <img id="preview" style="max-width: 200px; max-height: 200px; display: none;" alt="Image Preview"><br><br>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const biometricInput = document.getElementById('biometric_data');
+        const previewImage = document.getElementById('preview');
+        const form = document.getElementById('userForm');
+
+        // Show preview when image is selected
+        biometricInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Submit form data
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const payload = {
+                national_id: formData.get('national_id'),
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phone_number: formData.get('phone_number'),
+                password: formData.get('password'),
+                date_of_birth: formData.get('date_of_birth'),
+                biometric_data: previewImage.src, // Send base64 data
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('User added successfully!');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (err) {
+                console.error('Error submitting form:', err);
+                alert('Failed to submit the form.');
+            }
+        });
+    </script>
+</body>
+</html>
