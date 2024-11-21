@@ -1,12 +1,7 @@
 const dotenv = require('dotenv');
-dotenv.config(); // Ensure this is at the very top
+dotenv.config(); // Load environment variables
 
 const mysql = require('mysql2');
-
-console.log('DB_HOST:', process.env.DB_HOST); // Debugging log
-console.log('DB_USER:', process.env.DB_USER); // Debugging log
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD); // Debugging log
-console.log('DB_NAME:', process.env.DB_NAME); // Debugging log
 
 const db = mysql.createPool({
     host: process.env.DB_HOST,

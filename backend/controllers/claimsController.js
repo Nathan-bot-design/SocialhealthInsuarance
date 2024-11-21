@@ -1,61 +1,73 @@
-const axios = require('axios');
 const db = require('../db/db');
 
-// Generate access token
-const generateAccessToken = async () => {
-    const consumerKey = 'WA3AzWLClJF1Mn0aiOz2LRNNEfQl2SGUiU9I3a3d9zjEVMHv';
-    const consumerSecret = 'pj77WmhqWvjOgPbNEeoQ9lZLRsAKsnaqz9KFE50JCTOSxB3ghGpQcZMQoKquovBY';
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
-
-    try {
-        const response = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
-            headers: { Authorization: `Basic ${auth}` },
-        });
-        return response.data.access_token;
-    } catch (err) {
-        throw new Error('Error generating access token');
-    }
+// Get all claims
+const getClaims = (req, res) => {
+    const query = 'SELECT * FROM claims_table';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json(results);
+    });
 };
 
-// Initiate STK Push
-const initiatePayment = async (req, res) => {
-    const { phoneNumber, amount, paymentType, userId } = req.body;
-
-    try {
-        const accessToken = await generateAccessToken();
-        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-        const shortcode = '174379'; // Replace with your shortcode
-        const passkey = 'YOUR_PASSKEY';
-        const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-
-        const paymentData = {
-            BusinessShortCode: shortcode,
-            Password: password,
-            Timestamp: timestamp,
-            TransactionType: 'CustomerPayBillOnline',
-            Amount: amount,
-            PartyA: phoneNumber,
-            PartyB: shortcode,
-            PhoneNumber: phoneNumber,
-            CallBackURL: 'https://yourdomain.com/api/payments/callback',
-            AccountReference: 'Health Insurance',
-            TransactionDesc: paymentType,
-        };
-
-        await axios.post(
-            'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-            paymentData,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-
-        const query = `INSERT INTO payments_table (UserID, PaymentDate, Amount, PaymentType) VALUES (?, NOW(), ?, ?)`;
-        db.query(query, [userId, amount, paymentType], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(200).json({ message: 'Payment initiated successfully.' });
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// Create a new claim
+const createClaim = (req, res) => {
+    const { UserID, DateSubmitted, TotalAmount, Description } = req.body;
+    const query = `
+        INSERT INTO claims_table (UserID, DateSubmitted, TotalAmount, Description, Status) 
+        VALUES (?, ?, ?, ?, 'Pending')
+    `;
+    db.query(query, [UserID, DateSubmitted, TotalAmount, Description], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({ message: 'Claim created successfully.', claimId: results.insertId });
+    });
 };
 
-module.exports = { initiatePayment };
+// Update claim status
+const updateClaimStatus = (req, res) => {
+    const { claimId } = req.params;
+    const { status } = req.body;
+    const query = 'UPDATE claims_table SET Status = ? WHERE ClaimID = ?';
+    db.query(query, [status, claimId], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: 'Claim status updated successfully.' });
+    });
+};
+
+// Upload a claim document
+const uploadClaimDocument = (req, res) => {
+    const { claimId } = req.params;
+    const { file } = req;
+    if (!file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    const query = `
+        INSERT INTO documents_table (ClaimID, FileName, FilePath)
+        VALUES (?, ?, ?)
+    `;
+    db.query(query, [claimId, file.originalname, file.path], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({ message: 'Document uploaded successfully.' });
+    });
+};
+
+// Get claim details
+const getClaimDetails = (req, res) => {
+    const { claimId } = req.params;
+    const query = `
+        SELECT c.*, d.DocumentID, d.FileName, d.FilePath
+        FROM claims_table c
+        LEFT JOIN documents_table d ON c.ClaimID = d.ClaimID
+        WHERE c.ClaimID = ?
+    `;
+    db.query(query, [claimId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json(results);
+    });
+};
+
+module.exports = {
+    getClaims,
+    createClaim,
+    updateClaimStatus,
+    uploadClaimDocument,
+    getClaimDetails
+};
