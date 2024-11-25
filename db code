@@ -1,0 +1,156 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema socialhealthinsurance
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema socialhealthinsurance
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `socialhealthinsurance` DEFAULT CHARACTER SET utf8mb4 ;
+USE `socialhealthinsurance` ;
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`administration_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`administration_table` (
+  `AdminID` INT NOT NULL AUTO_INCREMENT,
+  `Name` VARCHAR(255) NOT NULL,
+  `Email` VARCHAR(255) NOT NULL,
+  `PasswordHash` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`AdminID`),
+  UNIQUE INDEX `Email` (`Email` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`user_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`user_table` (
+  `UserID` INT NOT NULL AUTO_INCREMENT,
+  `Name` VARCHAR(255) NOT NULL,
+  `NationalID` VARCHAR(20) NOT NULL,
+  `BiometricData` BLOB NULL DEFAULT NULL,
+  `ContactInfo` VARCHAR(45) NULL DEFAULT NULL,
+  `DateOfBirth` DATE NULL DEFAULT NULL,
+  `PasswordHash` VARCHAR(255) NOT NULL,
+  `CreatedAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `PhoneNumber` VARCHAR(45) NULL DEFAULT NULL,
+  `Email` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`UserID`),
+  UNIQUE INDEX `NationalID` (`NationalID` ASC) VISIBLE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 20
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`claims_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`claims_table` (
+  `ClaimID` INT NOT NULL AUTO_INCREMENT,
+  `UserID` INT NOT NULL,
+  `DateSubmitted` DATE NOT NULL,
+  `Status` ENUM('Pending', 'Approved', 'Rejected') NULL DEFAULT 'Pending',
+  `TotalAmount` DECIMAL(10,2) NULL DEFAULT NULL,
+  `Description` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`ClaimID`),
+  INDEX `UserID` (`UserID` ASC) VISIBLE,
+  CONSTRAINT `claims_table_ibfk_1`
+    FOREIGN KEY (`UserID`)
+    REFERENCES `socialhealthinsurance`.`user_table` (`UserID`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 2
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`documents_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`documents_table` (
+  `DocumentID` INT NOT NULL AUTO_INCREMENT,
+  `ClaimID` INT NOT NULL,
+  `FileName` VARCHAR(255) NOT NULL,
+  `FilePath` VARCHAR(500) NOT NULL,
+  `UploadDate` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`DocumentID`),
+  INDEX `ClaimID` (`ClaimID` ASC) VISIBLE,
+  CONSTRAINT `documents_table_ibfk_1`
+    FOREIGN KEY (`ClaimID`)
+    REFERENCES `socialhealthinsurance`.`claims_table` (`ClaimID`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+AUTO_INCREMENT = 2
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`payments_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`payments_table` (
+  `PaymentID` INT NOT NULL AUTO_INCREMENT,
+  `UserID` INT NOT NULL,
+  `PaymentDate` DATE NOT NULL,
+  `Amount` DECIMAL(10,2) NOT NULL,
+  `PaymentType` ENUM('Monthly', 'Annual') NULL DEFAULT NULL,
+  `TransactionID` VARCHAR(50) NULL DEFAULT NULL,
+  PRIMARY KEY (`PaymentID`),
+  UNIQUE INDEX `TransactionID` (`TransactionID` ASC) VISIBLE,
+  INDEX `UserID` (`UserID` ASC) VISIBLE,
+  CONSTRAINT `payments_table_ibfk_1`
+    FOREIGN KEY (`UserID`)
+    REFERENCES `socialhealthinsurance`.`user_table` (`UserID`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`reports_table`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`reports_table` (
+  `ReportID` INT NOT NULL AUTO_INCREMENT,
+  `ReportType` VARCHAR(50) NOT NULL,
+  `GeneratedBy` INT NOT NULL,
+  `DateGenerated` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `Content` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`ReportID`),
+  INDEX `GeneratedBy` (`GeneratedBy` ASC) VISIBLE,
+  CONSTRAINT `reports_table_ibfk_1`
+    FOREIGN KEY (`GeneratedBy`)
+    REFERENCES `socialhealthinsurance`.`administration_table` (`AdminID`)
+    ON DELETE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+-- -----------------------------------------------------
+-- Table `socialhealthinsurance`.`timestamps`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `socialhealthinsurance`.`timestamps` (
+  `TableName` VARCHAR(50) NULL DEFAULT NULL,
+  `OperationType` ENUM('INSERT', 'UPDATE', 'DELETE') NULL DEFAULT NULL,
+  `OperationTime` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
